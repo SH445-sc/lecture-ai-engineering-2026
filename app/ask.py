@@ -27,14 +27,29 @@ def ask(question: str) -> str:
 
     # TODO(第1回 演習): response.usage_metadata から
     #   入力トークン数と出力トークン数を表示してみよう（Copilotに頼んでよい）
-
+    print("入力トークン数:", response.usage_metadata.prompt_token_count)
+    print("出力トークン数:", response.usage_metadata.candidates_token_count)
     return response.text
 
+def chat(first_question: str) -> None:
+    client = genai.Client(api_key=get_api_key())
+    session = client.chats.create(model=MODEL)  # 履歴は SDK の Chat が持つ
+    question = first_question
+    while question:
+        response = session.send_message(question)  # これまでの履歴＋今回の質問を送る
+        print(response.text)
+        usage = response.usage_metadata
+        print(f"[tokens] 入力 {usage.prompt_token_count} / 出力 {usage.candidates_token_count}")
+        question = input("\n[続けて質問（空行で終了）] ").strip()
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="素のLLMに質問する")
     parser.add_argument("question", nargs="?", default=DEFAULT_QUESTION)
+    parser.add_argument("--chat", action="store_true", help="続けて質問できるチャットモードで実行する")
     args = parser.parse_args()
+    if args.chat:
+        chat(args.question)
+        return
 
     print(f"[model] {MODEL}")
     print(f"[質問] {args.question}\n")
